@@ -23,9 +23,9 @@ ReachLink AI streamlines that process — so you can focus on growth, not guessw
 
 ## 🚀 Tech Stack
 
-- **Frontend**: React + Tailwind CSS  
-- **AI Layer**: OpenAI GPT-4o  
-- **Hosting**: Vercel  
+- **Frontend**: React + Tailwind CSS + TypeScript  
+- **AI Layer**: Gemini flash 
+- **Hosting**: Netlify  
 - **Planned Add-ons**: Aanalytics, authentication & scheduling.  
 
 ---
