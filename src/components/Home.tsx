@@ -60,22 +60,26 @@ const Home: React.FC<HomeProps> = ({ onSubmit, isLoading }) => {
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8 relative">
-          <button
-            onClick={handleSignOut}
-            className="absolute right-0 top-0 flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="text-sm font-medium">Logout</span>
-          </button>
+          {user && (
+            <button
+              onClick={handleSignOut}
+              className="absolute right-0 top-0 flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          )}
 
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">ReachLinkAI</h1>
           <p className="text-gray-600 text-lg">AI LinkedIn Growth Tool — Reach More. Engage Better. Grow Faster.</p>
-          <div className="mt-2 text-sm text-gray-500">
-            {user?.email}
-          </div>
+          {user && (
+            <div className="mt-2 text-sm text-gray-500">
+              {user.email}
+            </div>
+          )}
           <div className="mt-4 inline-flex items-center space-x-4 text-sm text-gray-500">
             <span>✨ AI LinkedIn Post Optimizer</span>
             <span>•</span>

@@ -7,35 +7,43 @@ import { fetchResults } from './services/api';
 import { useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-type Screen = 'home' | 'results';
+type Screen = 'home' | 'results' | 'auth';
 
 function App() {
   const { user, loading } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [results, setResults] = useState<string[]>([]);
+  const [originalInput, setOriginalInput] = useState<string>('');
   const [currentMode, setCurrentMode] = useState<'generate' | 'optimize'>('generate');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasTriedOnce, setHasTriedOnce] = useState(false);
 
   const handleFormSubmit = async (data: FormData) => {
+    if (hasTriedOnce && !user) {
+      setCurrentScreen('auth');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setCurrentMode(data.mode);
-    
+    setOriginalInput(data.input);
+
     try {
       const apiResults = await fetchResults(data);
-      
+
       if (apiResults.length === 0) {
         throw new Error(`No ${data.mode === 'generate' ? 'content generated' : 'improved versions generated'}. Please try again with different input.`);
       }
-      
+
       setResults(apiResults);
       setCurrentScreen('results');
+      setHasTriedOnce(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
-      
-      // Show error for 5 seconds then clear
+
       setTimeout(() => setError(null), 5000);
     } finally {
       setIsLoading(false);
@@ -43,8 +51,13 @@ function App() {
   };
 
   const handleNewQuery = () => {
+    if (!user) {
+      setCurrentScreen('auth');
+      return;
+    }
     setCurrentScreen('home');
     setResults([]);
+    setOriginalInput('');
     setError(null);
   };
 
@@ -59,19 +72,22 @@ function App() {
     );
   }
 
-  if (!user) {
-    return <Auth />;
-  }
-
   return (
     <div className="relative">
-      {currentScreen === 'home' ? (
+      {currentScreen === 'auth' ? (
+        <Auth />
+      ) : currentScreen === 'home' ? (
         <Home
           onSubmit={handleFormSubmit}
           isLoading={isLoading}
         />
       ) : (
-        <Results results={results} onNewQuery={handleNewQuery} mode={currentMode} />
+        <Results
+          results={results}
+          onNewQuery={handleNewQuery}
+          mode={currentMode}
+          originalInput={originalInput}
+        />
       )}
 
       {/* Error Toast */}
