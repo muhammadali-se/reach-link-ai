@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import Home from './components/Home';
 import Results from './components/Results';
+import Auth from './components/Auth';
 import { FormData } from './types';
 import { fetchResults } from './services/api';
+import { useAuth } from './contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 type Screen = 'home' | 'results';
 
 function App() {
+  const { user, loading } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [results, setResults] = useState<string[]>([]);
   const [currentMode, setCurrentMode] = useState<'generate' | 'optimize'>('generate');
@@ -44,12 +48,27 @@ function App() {
     setError(null);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Auth />;
+  }
+
   return (
     <div className="relative">
       {currentScreen === 'home' ? (
-        <Home 
-          onSubmit={handleFormSubmit} 
-          isLoading={isLoading} 
+        <Home
+          onSubmit={handleFormSubmit}
+          isLoading={isLoading}
         />
       ) : (
         <Results results={results} onNewQuery={handleNewQuery} mode={currentMode} />
