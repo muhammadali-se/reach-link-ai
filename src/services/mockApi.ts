@@ -1,6 +1,5 @@
 import { FormData } from '../types';
 
-// Mock data for post generation by tone
 const mockPostIdeas = {
   neutral: [
     `After 3 years in tech leadership, here are 5 lessons that changed how I work:
@@ -169,7 +168,6 @@ Best decision I ever made.
   ]
 };
 
-// Mock data for optimization by tone
 const mockOptimizedPosts = {
   neutral: [
     `After 5 years in tech, here's what I've learned about success:
@@ -359,8 +357,31 @@ const getRandomItems = <T>(array: T[], count: number): T[] => {
   return shuffled.slice(0, count);
 };
 
+const fillGaps = (text: string, tone: string): string => {
+  const gapOptions: Record<string, string[]> = {
+    neutral: ['insightful approach', 'key strategy', 'valuable lesson', 'important insight', 'effective method'],
+    viral: ['game-changing approach', 'revolutionary strategy', 'mind-blowing insight', 'powerful secret', 'ultimate hack'],
+    professional: ['strategic approach', 'proven methodology', 'data-driven insight', 'systematic framework', 'best practice'],
+    concise: ['smart move', 'key point', 'main lesson', 'core insight', 'quick win']
+  };
+
+  const options = gapOptions[tone] || gapOptions.neutral;
+
+  return text.replace(/\[([^\]]+)\]/g, () => {
+    return options[Math.floor(Math.random() * options.length)];
+  });
+};
+
 export const fetchMockResults = async (data: FormData): Promise<string[]> => {
   await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+
+  if (data.mode === 'fill') {
+    return [
+      fillGaps(data.input, data.tone),
+      fillGaps(data.input, data.tone),
+      fillGaps(data.input, data.tone)
+    ];
+  }
 
   const toneData = data.mode === 'generate' ? mockPostIdeas : mockOptimizedPosts;
   const selectedToneData = toneData[data.tone] || toneData.viral;

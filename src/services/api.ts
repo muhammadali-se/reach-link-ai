@@ -4,7 +4,6 @@ import { fetchMockResults } from './mockApi';
 const API_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
 
-// Check if we should use mock data (when no API key is provided)
 export const shouldUseMockData = (): boolean => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   return (
@@ -14,7 +13,6 @@ export const shouldUseMockData = (): boolean => {
   );
 };
 
-// Note: In a production app, the API key should be handled server-side
 const getApiKey = (): string => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
@@ -25,7 +23,6 @@ const getApiKey = (): string => {
   return apiKey;
 };
 
-// Convert escaped newlines like "\\n" to real ones
 const unescapeLineBreaks = (s: string): string =>
   s
     .replace(/\\r\\n/g, '\r\n')
@@ -47,7 +44,6 @@ const buildPrompt = (data: FormData): string => {
   };
 
   if (data.mode === 'generate') {
-    // NOTE: Changed to produce 3 total posts (original + 2 variations)
     return `Create a comprehensive LinkedIn post about: "${data.input}"
 
 Tone: ${toneInstructions[data.tone]}
@@ -68,8 +64,30 @@ IMPORTANT FORMATTING RULES for all versions:
 
 Example format with proper spacing:
 ["Hook sentence\\n\\nMain paragraph with insights\\n\\nCall to action", "Variation 1 with line breaks", "Variation 2 with line breaks"]`;
+  } else if (data.mode === 'fill') {
+    return `Fill in the [gaps] in this LinkedIn post with appropriate content:
+
+"${data.input}"
+
+Tone: ${toneInstructions[data.tone]}
+
+Create 3 different variations with the gaps filled in:
+1. First variation with creative gap fills
+2. Second variation with alternative gap fills
+3. Third variation with different approach to gap fills
+
+IMPORTANT RULES:
+- Only replace text within [square brackets]
+- Keep all other text exactly as provided
+- Make gap fills contextually relevant and flow naturally
+- Use double line breaks (\\n\\n) between paragraphs for proper spacing
+- Ensure each variation is complete and professional
+- Match the tone requested
+- Return as a JSON array of 3 complete strings
+
+Example format:
+["Filled version 1", "Filled version 2", "Filled version 3"]`;
   } else {
-    // edit/optimize mode already asks for 3 variants — keep as-is
     return `Take this LinkedIn post and create one optimized version, then generate 2 additional variations:
 
 Original post:
@@ -100,7 +118,6 @@ Example format with proper spacing:
 };
 
 export const fetchResults = async (data: FormData): Promise<string[]> => {
-  // Use mock data if no API key is configured
   if (shouldUseMockData()) {
     console.log('Using mock data - no Gemini API key configured');
     return fetchMockResults(data);
@@ -174,19 +191,16 @@ export const fetchResults = async (data: FormData): Promise<string[]> => {
     const content = result.candidates[0].content.parts[0].text.trim();
 
     try {
-      // Clean content by removing markdown and formatting
       let cleanContent = content
         .replace(/```json\s*/g, '')
         .replace(/```\s*/g, '')
         .trim();
 
-      // Try to parse JSON
       const parsedResults = JSON.parse(cleanContent);
       if (!Array.isArray(parsedResults)) {
         throw new Error('API response is not an array');
       }
 
-      // Normalize line breaks and clean text
       const cleanResults = parsedResults
         .filter((item) => typeof item === 'string' && item.trim().length > 0)
         .map((item) => {
@@ -194,10 +208,8 @@ export const fetchResults = async (data: FormData): Promise<string[]> => {
           return unescapeLineBreaks(stripped);
         });
 
-      // Return up to 3 posts in generate mode (quality over quantity)
-      return cleanResults.slice(0, data.mode === 'generate' ? 3 : 3);
+      return cleanResults.slice(0, 3);
     } catch (parseError) {
-      // Fallback: if JSON parsing fails, extract manually
       console.warn('Failed to parse JSON, using fallback extraction');
 
       const lines = content
@@ -215,11 +227,9 @@ export const fetchResults = async (data: FormData): Promise<string[]> => {
         .map(unescapeLineBreaks);
 
       if (lines.length > 0) {
-        // Return up to 3 items
-        return lines.slice(0, data.mode === 'generate' ? 3 : 3);
+        return lines.slice(0, 3);
       }
 
-      // Last resort: return as single cleaned string
       const cleanedContent = unescapeLineBreaks(
         content.replace(/```json|```/g, '').replace(/^\[|\]$/g, '').trim()
       );
