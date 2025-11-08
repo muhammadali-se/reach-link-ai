@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Sparkles, RefreshCw, Info, Lightbulb, Edit3, LogOut, FileText, Clock } from 'lucide-react';
+import { Sparkles, RefreshCw, Info, Lightbulb, Edit3, LogOut, FileText } from 'lucide-react';
 import { Mode, FormData, Tone } from '../types';
 import { shouldUseMockData } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import type { User } from '@supabase/supabase-js';
 
 interface HomeProps {
   onSubmit: (data: FormData) => void;
   isLoading: boolean;
-  onViewHistory: () => void;
+  hasUsedFreeTrial: boolean;
+  user: User | null;
 }
 
-const Home: React.FC<HomeProps> = ({ onSubmit, isLoading, onViewHistory }) => {
-  const { signOut, user } = useAuth();
+const Home: React.FC<HomeProps> = ({ onSubmit, isLoading, hasUsedFreeTrial, user }) => {
+  const { signOut } = useAuth();
   const [mode, setMode] = useState<Mode>('optimize');
   const [input, setInput] = useState('');
   const [tone, setTone] = useState<Tone>('neutral');
@@ -72,26 +74,17 @@ const Home: React.FC<HomeProps> = ({ onSubmit, isLoading, onViewHistory }) => {
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8 relative">
-          <div className="absolute right-0 top-0 flex items-center space-x-2">
-            {user && (
-              <>
-                <button
-                  onClick={onViewHistory}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200"
-                >
-                  <Clock className="w-4 h-4" />
-                  <span className="text-sm font-medium">History</span>
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="text-sm font-medium">Logout</span>
-                </button>
-              </>
-            )}
-          </div>
+          {user && (
+            <div className="absolute right-0 top-0 flex items-center space-x-2">
+              <button
+                onClick={handleSignOut}
+                className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded-xl transition-all duration-200"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm font-medium">Logout</span>
+              </button>
+            </div>
+          )}
 
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
             <Sparkles className="w-8 h-8 text-white" />
@@ -112,17 +105,33 @@ const Home: React.FC<HomeProps> = ({ onSubmit, isLoading, onViewHistory }) => {
           </div>
         </div>
 
-        {isUsingMockData && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-            <div className="flex items-start space-x-3">
-              <Info className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="text-sm font-semibold text-amber-800 mb-1">Demo Mode</h3>
-                <p className="text-sm text-amber-700">
-                  You're using mock data since no Gemini API key is configured.
-                  The app will show sample results to demonstrate functionality.
-                </p>
-              </div>
+        {(isUsingMockData || (hasUsedFreeTrial && !user)) && (
+          <div className={`border rounded-xl p-4 mb-6 flex items-start space-x-3 ${
+            hasUsedFreeTrial && !user
+              ? 'bg-blue-50 border-blue-200'
+              : 'bg-amber-50 border-amber-200'
+          }`}>
+            <Info className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+              hasUsedFreeTrial && !user
+                ? 'text-blue-600'
+                : 'text-amber-600'
+            }`} />
+            <div>
+              {hasUsedFreeTrial && !user ? (
+                <>
+                  <h3 className="text-sm font-semibold text-blue-900 mb-1">Sign Up to Continue</h3>
+                  <p className="text-sm text-blue-800">
+                    You've used your free trial. Create an account to generate more posts.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-sm font-semibold text-amber-800 mb-1">Demo Mode</h3>
+                  <p className="text-sm text-amber-700">
+                    Using sample data. Configure your Gemini API key for real results.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         )}

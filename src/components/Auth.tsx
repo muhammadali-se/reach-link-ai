@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, LogIn, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-const Auth: React.FC = () => {
+interface AuthProps {
+  onAuthComplete?: () => void;
+}
+
+const Auth: React.FC<AuthProps> = ({ onAuthComplete }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, user } = useAuth();
+
+  useEffect(() => {
+    if (user && onAuthComplete) {
+      onAuthComplete();
+    }
+  }, [user, onAuthComplete]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

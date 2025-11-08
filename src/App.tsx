@@ -1,14 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
 import Home from './components/Home';
 import Results from './components/Results';
-import History from './components/History';
 import { fetchResults } from './services/api';
 import { savePost } from './services/postsService';
 import { FormData } from './types';
 
-type AppView = 'home' | 'results' | 'history';
+type AppView = 'home' | 'results' | 'auth';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -17,8 +16,21 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData | null>(null);
+  const [hasUsedFreeTrial, setHasUsedFreeTrial] = useState(false);
+
+  useEffect(() => {
+    const savedTrial = localStorage.getItem('reachlink_used_trial');
+    if (savedTrial === 'true') {
+      setHasUsedFreeTrial(true);
+    }
+  }, []);
 
   const handleSubmit = async (data: FormData) => {
+    if (hasUsedFreeTrial && !user) {
+      setView('auth');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setFormData(data);
@@ -27,10 +39,14 @@ function AppContent() {
       const generatedResults = await fetchResults(data);
       setResults(generatedResults);
       setView('results');
+      setHasUsedFreeTrial(true);
+      localStorage.setItem('reachlink_used_trial', 'true');
 
-      const { error: saveError } = await savePost(data, generatedResults);
-      if (saveError) {
-        console.error('Error saving post to database:', saveError);
+      if (user) {
+        const { error: saveError } = await savePost(data, generatedResults);
+        if (saveError) {
+          console.error('Error saving post to database:', saveError);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -41,17 +57,17 @@ function AppContent() {
   };
 
   const handleNewQuery = () => {
+    if (hasUsedFreeTrial && !user) {
+      setView('auth');
+      return;
+    }
     setResults([]);
     setFormData(null);
     setError(null);
     setView('home');
   };
 
-  const handleViewHistory = () => {
-    setView('history');
-  };
-
-  const handleBackFromHistory = () => {
+  const handleAuthComplete = () => {
     setView('home');
   };
 
@@ -64,10 +80,6 @@ function AppContent() {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    return <Auth />;
   }
 
   if (error) {
@@ -92,8 +104,8 @@ function AppContent() {
     );
   }
 
-  if (view === 'history') {
-    return <History onBack={handleBackFromHistory} />;
+  if (view === 'auth') {
+    return <Auth onAuthComplete={handleAuthComplete} />;
   }
 
   if (view === 'results' && results.length > 0 && formData) {
@@ -107,7 +119,7 @@ function AppContent() {
     );
   }
 
-  return <Home onSubmit={handleSubmit} isLoading={isLoading} onViewHistory={handleViewHistory} />;
+  return <Home onSubmit={handleSubmit} isLoading={isLoading} hasUsedFreeTrial={hasUsedFreeTrial} user={user} />;
 }
 
 function App() {
