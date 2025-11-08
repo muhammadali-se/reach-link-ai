@@ -4,7 +4,7 @@ import { Copy, CheckCircle2, ArrowLeft, Lightbulb, CreditCard as Edit3, Star } f
 interface ResultsProps {
   results: string[];
   onNewQuery: () => void;
-  mode: 'generate' | 'optimize';
+  mode: 'generate' | 'optimize' | 'fill';
   originalInput: string;
 }
 
@@ -28,6 +28,12 @@ const Results: React.FC<ResultsProps> = ({ results, onNewQuery, mode, originalIn
         title: 'Generated Content',
         subtitle: 'Fresh LinkedIn post ideas and content'
       };
+    } else if (mode === 'fill') {
+      return {
+        icon: <Star className="w-8 h-8 text-white" />,
+        title: 'Filled Gaps',
+        subtitle: 'Your post with gaps filled in'
+      };
     } else {
       return {
         icon: <Edit3 className="w-8 h-8 text-white" />,
@@ -42,7 +48,6 @@ const Results: React.FC<ResultsProps> = ({ results, onNewQuery, mode, originalIn
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-8 pt-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
             {headerInfo.icon}
@@ -51,11 +56,10 @@ const Results: React.FC<ResultsProps> = ({ results, onNewQuery, mode, originalIn
           <p className="text-gray-600">{headerInfo.subtitle}</p>
         </div>
 
-        {/* Original Input Card */}
         {originalInput && (
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center space-x-2">
-              <span>{mode === 'generate' ? 'Your Topic' : 'Original Post'}</span>
+              <span>{mode === 'generate' ? 'Your Topic' : mode === 'fill' ? 'Original With Gaps' : 'Original Post'}</span>
             </h3>
             <div className="bg-gray-50 rounded-xl border-2 border-gray-300 p-6">
               <div className="text-gray-700 leading-relaxed whitespace-pre-line">
@@ -65,12 +69,11 @@ const Results: React.FC<ResultsProps> = ({ results, onNewQuery, mode, originalIn
           </div>
         )}
 
-        {/* Best Result Highlighted */}
         {results.length > 0 && (
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center space-x-2">
               <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-              <span>Best {mode === 'generate' ? 'Post Idea' : 'Optimized Version'}</span>
+              <span>Best {mode === 'generate' ? 'Post Idea' : mode === 'fill' ? 'Filled Version' : 'Optimized Version'}</span>
             </h3>
             <div className="bg-white rounded-xl shadow-lg border-2 border-blue-500 overflow-hidden group">
               <div className="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-blue-100 to-blue-200 border-b border-blue-300">
@@ -106,7 +109,6 @@ const Results: React.FC<ResultsProps> = ({ results, onNewQuery, mode, originalIn
           </div>
         )}
 
-        {/* Alternative Results */}
         {results.length > 1 && (
           <>
             <h3 className="text-lg font-semibold text-gray-700 mb-3">Alternative Options</h3>
@@ -153,19 +155,18 @@ const Results: React.FC<ResultsProps> = ({ results, onNewQuery, mode, originalIn
           </>
         )}
 
-        {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={onNewQuery}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 group"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
-            <span>{mode === 'generate' ? 'Generate More' : 'Try Another Post'}</span>
+            <span>{mode === 'generate' ? 'Generate More' : mode === 'fill' ? 'Fill More Gaps' : 'Try Another Post'}</span>
           </button>
         </div>
 
         <div className="text-center mt-8 text-sm text-gray-500">
-          {results.length} {mode === 'generate' ? 'idea' : 'version'}{results.length !== 1 ? 's' : ''} generated • Click any card to copy • @ReachLinkAI 2025 All Rights Reserved
+          {results.length} {mode === 'generate' ? 'idea' : mode === 'fill' ? 'filled version' : 'version'}{results.length !== 1 ? 's' : ''} generated • Click any card to copy • @ReachLinkAI 2025 All Rights Reserved
         </div>
       </div>
     </div>
