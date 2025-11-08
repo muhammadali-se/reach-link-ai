@@ -8,7 +8,7 @@ export interface GeminiResponse {
   }>;
 }
 
-export type Mode = 'generate' | 'optimize';
+export type Mode = 'generate' | 'optimize' | 'fill';
 
 export type Tone = 'neutral' | 'viral' | 'professional' | 'concise';
 
