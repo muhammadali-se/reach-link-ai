@@ -1,107 +1,120 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Auth from './components/Auth';
 import Home from './components/Home';
 import Results from './components/Results';
-import Auth from './components/Auth';
-import { FormData } from './types';
+import History from './components/History';
 import { fetchResults } from './services/api';
-import { useAuth } from './contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { savePost } from './services/postsService';
+import { FormData } from './types';
 
-type Screen = 'home' | 'results' | 'auth';
+type AppView = 'home' | 'results' | 'history';
 
-function App() {
+function AppContent() {
   const { user, loading } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [view, setView] = useState<AppView>('home');
   const [results, setResults] = useState<string[]>([]);
-  const [originalInput, setOriginalInput] = useState<string>('');
-  const [currentMode, setCurrentMode] = useState<'generate' | 'optimize'>('generate');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasTriedOnce, setHasTriedOnce] = useState(false);
+  const [formData, setFormData] = useState<FormData | null>(null);
 
-  const handleFormSubmit = async (data: FormData) => {
-    if (hasTriedOnce && !user) {
-      setCurrentScreen('auth');
-      return;
-    }
-
+  const handleSubmit = async (data: FormData) => {
     setIsLoading(true);
     setError(null);
-    setCurrentMode(data.mode);
-    setOriginalInput(data.input);
+    setFormData(data);
 
     try {
-      const apiResults = await fetchResults(data);
+      const generatedResults = await fetchResults(data);
+      setResults(generatedResults);
+      setView('results');
 
-      if (apiResults.length === 0) {
-        throw new Error(`No ${data.mode === 'generate' ? 'content generated' : 'improved versions generated'}. Please try again with different input.`);
+      const { error: saveError } = await savePost(data, generatedResults);
+      if (saveError) {
+        console.error('Error saving post to database:', saveError);
       }
-
-      setResults(apiResults);
-      setCurrentScreen('results');
-      setHasTriedOnce(true);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-      setError(errorMessage);
-
-      setTimeout(() => setError(null), 5000);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching results:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleNewQuery = () => {
-    if (!user) {
-      setCurrentScreen('auth');
-      return;
-    }
-    setCurrentScreen('home');
     setResults([]);
-    setOriginalInput('');
+    setFormData(null);
     setError(null);
+    setView('home');
+  };
+
+  const handleViewHistory = () => {
+    setView('history');
+  };
+
+  const handleBackFromHistory = () => {
+    setView('home');
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="relative">
-      {currentScreen === 'auth' ? (
-        <Auth />
-      ) : currentScreen === 'home' ? (
-        <Home
-          onSubmit={handleFormSubmit}
-          isLoading={isLoading}
-        />
-      ) : (
-        <Results
-          results={results}
-          onNewQuery={handleNewQuery}
-          mode={currentMode}
-          originalInput={originalInput}
-        />
-      )}
+  if (!user) {
+    return <Auth />;
+  }
 
-      {/* Error Toast */}
-      {error && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-2 duration-300">
-          <div className="bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg max-w-md mx-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-              <p className="font-medium">{error}</p>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+              <span className="text-3xl">⚠️</span>
             </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={handleNewQuery}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+            >
+              Try Again
+            </button>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  if (view === 'history') {
+    return <History onBack={handleBackFromHistory} />;
+  }
+
+  if (view === 'results' && results.length > 0 && formData) {
+    return (
+      <Results
+        results={results}
+        onNewQuery={handleNewQuery}
+        mode={formData.mode}
+        originalInput={formData.input}
+      />
+    );
+  }
+
+  return <Home onSubmit={handleSubmit} isLoading={isLoading} onViewHistory={handleViewHistory} />;
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
